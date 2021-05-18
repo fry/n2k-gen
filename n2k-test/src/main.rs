@@ -1,19 +1,21 @@
 use canutils::candump_parser::*;
 use embedded_hal_can::{Filter, Frame};
 use n2k_messages::Pgns;
-use std::convert::TryFrom;
+use std::{collections::HashSet, convert::TryFrom};
 
 struct CanDumpReceiver {
     lines: Vec<String>,
     ctr: usize,
+    pgn_filter: Option<HashSet<u32>>,
 }
 
 impl CanDumpReceiver {
-    pub fn new(dump_file: &str) -> Self {
+    pub fn new(dump_file: &str, pgns: Option<HashSet<u32>>) -> Self {
         let dump = std::fs::read_to_string(dump_file).unwrap();
         Self {
             lines: dump.lines().map(|s| s.to_owned()).collect(),
             ctr: 0,
+            pgn_filter: pgns,
         }
     }
 }
@@ -53,8 +55,13 @@ impl embedded_hal_can::Receiver for CanDumpReceiver {
 
             if let Ok(entry) = entry {
                 let id = n2k::Id::try_from(entry.1.can_frame().frame_id).unwrap();
-                let bytes = entry.1.can_frame().frame_body.to_be_bytes();
-                return Ok(n2k::CanFrame::new(id, &bytes));
+                println!("id {}", id.pgn());
+                if self.pgn_filter.is_none()
+                    || self.pgn_filter.as_ref().unwrap().contains(&id.pgn())
+                {
+                    let bytes = entry.1.can_frame().frame_body.to_be_bytes();
+                    return Ok(n2k::CanFrame::new(id, &bytes));
+                }
             }
         }
     }
@@ -70,7 +77,8 @@ impl embedded_hal_can::Receiver for CanDumpReceiver {
 
 fn main() {
     env_logger::init();
-    let receiver = CanDumpReceiver::new("candumpSample3.txt");
+    //Some([127237].iter().cloned().collect())
+    let receiver = CanDumpReceiver::new("candumpSample3.txt", None);
     let mut bus: n2k::Bus<_, n2k_messages::PgnRegistry> = n2k::Bus::new(receiver);
 
     loop {

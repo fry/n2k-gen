@@ -55,8 +55,9 @@ pub type Result<T, E, P> = core::result::Result<T, BusError<E, P>>;
 pub struct Bus<T, P> {
     can: T,
     address: u8,
+    // fast packet assembly cache, size must be a power of two, not currently enforced at compile time by FnvIndexMap
     fast_packet_cache:
-        FnvIndexMap<fast_packet::FastPacketIdentifier, fast_packet::FastPacketCache, 5>,
+        FnvIndexMap<fast_packet::FastPacketIdentifier, fast_packet::FastPacketCache, 16>,
     _pgn_registry: PhantomData<P>,
 }
 
@@ -104,8 +105,8 @@ where
             // First fast packet frame, initialize cache
             if fp_index == 0 {
                 let fp_data = &data[2..];
-
                 let total_size = data[1] as usize;
+                log::info!("total size {}", total_size);
 
                 let mut cache = fast_packet::FastPacketCache::new(total_size);
                 let result = cache.extend(fp_index, fp_data);
@@ -120,8 +121,9 @@ where
                 // Subsequent packet
                 let fp_data = &data[1..];
                 if let Some(cache) = self.fast_packet_cache.get_mut(&message_id) {
-                    log::info!("fast packet data {}/{}", cache.data.len(), cache.total_size);
                     let result = cache.extend(fp_index, fp_data);
+                    log::info!("fast packet data {}/{}", cache.data.len(), cache.total_size);
+
                     if result.is_err() {
                         // Error extending packet, remove cache
                         self.fast_packet_cache.remove(&message_id);

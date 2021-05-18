@@ -5,7 +5,10 @@ use heck::*;
 use log::*;
 use proc_macro2::{Ident, Span, TokenStream};
 use quote::{format_ident, quote};
-use std::{collections::HashSet, path::Path};
+use std::{
+    collections::{HashMap, HashSet},
+    path::Path,
+};
 use std::{fs::File, str::FromStr};
 use std::{io::Write, path::PathBuf};
 
@@ -413,12 +416,24 @@ fn codegen_impl(pgninfo: &PgnInfo) -> TokenStream {
 fn codegen_getters(pgninfo: &PgnInfo) -> (TokenStream, Vec<String>) {
     let mut getters = vec![];
     let mut generated_fields = vec![];
-    // let getters = vec![];
+
+    let mut seen_fields: HashMap<String, u32> = HashMap::new();
     for field in &pgninfo.fields.fields {
         if field.id == "reserved" {
             continue;
         }
-        let field_name = Ident::new(&field_name(&field.id), Span::call_site());
+        // Handle duplicate field names by adding a counter to the end
+        let actual_field_name = if let Some(counter) = seen_fields.get(&field.id) {
+            format!("{}{}", field.id, counter)
+        } else {
+            field.id.to_owned()
+        };
+        // Increment counter
+        seen_fields
+            .entry(field.id.to_owned())
+            .and_modify(|v| *v += 1)
+            .or_insert(1);
+        let field_name = Ident::new(&field_name(&actual_field_name), Span::call_site());
         let field_name_raw = Ident::new(&format!("{}_raw", field_name), Span::call_site());
 
         getters.push(codegen_raw_get_impl(field, &field_name_raw));
@@ -581,8 +596,7 @@ fn decode_unsigned_int_type_for_bit_length(bit_length: usize) -> (TokenStream, b
                 _a if _a > 32 && _a <= 64 => quote! { u64 },
                 _a if _a > 16 && _a <= 32 => quote! { u32 },
                 _a if _a > 8 && _a <= 16 => quote! { u16 },
-                _a if _a > 1 && _a <= 8 => quote! { u8 },
-                _a if _a == 1 => quote! { bool },
+                _a if _a > 0 && _a <= 8 => quote! { u8 },
                 a => panic!("unhandled bit length {}", a),
             },
             false,
@@ -595,8 +609,7 @@ fn decode_signed_int_type_for_bit_length(bit_length: usize) -> TokenStream {
         _a if _a > 32 && _a <= 64 => quote! { i64 },
         _a if _a > 16 && _a <= 32 => quote! { i32 },
         _a if _a > 8 && _a <= 16 => quote! { i16 },
-        _a if _a > 1 && _a <= 8 => quote! { i8 },
-        _a if _a == 1 => quote! { bool },
+        _a if _a > 0 && _a <= 8 => quote! { i8 },
         a => panic!("unhandled bit length {}", a),
     }
 }

@@ -275,6 +275,7 @@ dependencies = [
  "canutils",
  "embedded-hal-can",
  "env_logger",
+ "log",
  "n2k",
  "n2k-messages",
  "nb 1.0.0",
