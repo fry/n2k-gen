@@ -2,6 +2,8 @@
 
 NMEA 2000 `no_std` library implemented as an embedded-hal CAN driver.
 
+Based on https://github.com/sevenseas-io/n2k
+
 ## TODO
 - [x] Interface to identify fast packets and assemble
 - [ ] Sending
