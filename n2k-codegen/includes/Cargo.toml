@@ -1,0 +1,11 @@
+[package]
+name = "{crateName}"
+description="Generated decoders/encoders for n2k messages. "
+version = "0.1.0"
+authors = []
+edition = "2018"
+
+[dependencies]
+log = {{ version="0.4", default-features= false }}
+bitvec = "0.22.3"
+n2k = {{ path = "../n2k" }}

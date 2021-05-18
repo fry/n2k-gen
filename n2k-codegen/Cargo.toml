@@ -1,0 +1,21 @@
+[package]
+name = "n2k-codegen"
+version = "0.1.0"
+authors = [ "Eike Siewertsen <eike@allv.is>" ]
+edition = "2018"
+
+[dependencies]
+serde = "1"
+serde_derive = "1"
+serde-xml-rs = "0.*"
+log = "0.4"
+env_logger = "0.*"
+heck = "0.3.2"
+quote = "1.0.9"
+proc-macro2 = "1.0.26"
+structopt = "0.3.21"
+serde_json = "1.0.64"
+
+[[bin]]
+name = "cli-tool"
+path = "bin/cli.rs"

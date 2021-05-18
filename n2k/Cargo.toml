@@ -1,0 +1,17 @@
+[package]
+authors = ["René Herrero Gómez <rene@sevenseas.io>", "Eike Siewertsen <eike@allv.is>"]
+categories = ["no-std"]
+description = " NMEA 2000 no_std library implemented as an embedded-hal CAN driver "
+edition = "2018"
+keywords = ["nmea2000", "embedded", "can"]
+license = "MIT OR Apache-2.0"
+name = "n2k"
+readme = "README.md"
+version = "0.1.2"
+exclude = ["docs"]
+
+[dependencies]
+embedded-hal-can = "0.1.0"
+nb = { version = "1.0.0" }
+heapless = "0.7.0"
+log = "0.4.14"
