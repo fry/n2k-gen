@@ -141,6 +141,13 @@ fn codegen_pgns_registry_impl(pgns_file: &PgnsFile, pgns: &HashSet<u32>) -> Toke
         }
     }
 
+    // No fast-packets present
+    let matches_expr = if is_fast_packet.is_empty() {
+        quote! { false }
+    } else {
+        quote! { matches!(pgn, #(#is_fast_packet)|*) }
+    };
+
     quote! {
         pub struct PgnRegistry;
         impl n2k::PgnRegistry for PgnRegistry {
@@ -149,7 +156,7 @@ fn codegen_pgns_registry_impl(pgns_file: &PgnsFile, pgns: &HashSet<u32>) -> Toke
 
             // fn is_known(pgn: u32) -> bool;
             fn is_fast_packet(pgn: u32) -> bool {
-                matches!(pgn, #(#is_fast_packet)|*)
+                #matches_expr
             }
 
             fn build_message(pgn: u32, data: &[u8]) -> Result<Self::Message, Self::Error> {
