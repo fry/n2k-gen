@@ -19,6 +19,8 @@ const PGN_TP_DT: u32 = 0x00eb00; // 60160 - ISO Transport Protocol, Data Transfe
 pub enum BusError<E, P> {
     CouldNotOpenBus,
     CouldNotSendMessage,
+    NoExtendedId,
+    NoData,
     InvalidId(IdError),
     MessageError(MessageError),
     OutOfFastPacketMemory,
@@ -88,8 +90,17 @@ where
             Err(nb::Error::Other(e)) => return Err(nb::Error::Other(BusError::CanError(e))),
         };
 
-        let id = Id::try_from(frame.id().extended_id().unwrap()).unwrap();
-        let data = frame.data().unwrap();
+        // NMEA2000 only uses extended IDs
+        if frame.id().extended_id().is_none() {
+            return Err(BusError::NoExtendedId.into());
+        }
+
+        let id = Id::try_from(frame.id().extended_id().unwrap()).map_err(BusError::InvalidId)?;
+        let data = if let Some(data) = frame.data() {
+            data
+        } else {
+            return Err(BusError::NoData.into());
+        };
         // Is fast packet?
         if P::is_fast_packet(id.pgn()) {
             // Good explanation of the fast packet bit format:
